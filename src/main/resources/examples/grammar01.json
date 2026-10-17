@@ -1,0 +1,21 @@
+{
+  "grammar": {
+    "name": "Gramatyka ścieżek",
+    "directed": false,
+    "danglingEdges": "forbid",
+
+    "labels": {
+      "nonterminals": ["S", "A"],
+      "terminals": ["a", "b"]
+    },
+
+    "startGraph": {
+      "vertices": [
+        { "index": 0, "label": "S" }
+      ],
+      "edges": []
+    }
+
+
+  }
+}
