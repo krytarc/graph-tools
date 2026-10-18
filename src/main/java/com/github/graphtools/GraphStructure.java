@@ -118,6 +118,9 @@ public class GraphStructure {
                 });
     }
 
+    /**
+     * @return Optional<Map<Integer, Integer>>  - a mapping (index in subgraph -> index in graph)
+     */
     public Optional<Map<Integer, Integer>> findSubGraphMapping(GraphStructure subGraph) {
         Objects.requireNonNull(subGraph, "subGraph must not be null");
         if (directed != subGraph.isDirected()) {
