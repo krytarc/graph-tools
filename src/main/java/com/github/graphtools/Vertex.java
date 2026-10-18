@@ -9,7 +9,7 @@ import java.util.Random;
 @NoArgsConstructor
 public class Vertex {
 
-    int index = new Random().nextInt();
-    String label = "";
+    private int index = new Random().nextInt();
+    private String label = "";
 
 }

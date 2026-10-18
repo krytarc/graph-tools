@@ -6,8 +6,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class Edge {
-    int u;
-    int v;
-    Double weight = 1.0;
-    String Label = "";
+    private int u;
+    private int v;
+    private Double weight = 1.0;
+    private String Label = "";
 }

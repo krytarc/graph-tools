@@ -15,7 +15,11 @@ import tools.jackson.databind.json.JsonMapper;
 public class Graph extends GraphStructure{
 
     private String name;
-    private boolean directed;
+
+    public Graph(Graph graph) {
+        super(graph);
+        this.name = graph.getName();
+    }
 
     public static Graph fromJson(String json) {
         try {

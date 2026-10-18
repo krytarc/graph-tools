@@ -9,7 +9,6 @@ public class Production {
 
     String name = "";
     String description = "";
-    boolean directed = false;
     GraphStructure left;
     GraphStructure right;
     List<Mapping> mappings;

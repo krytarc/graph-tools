@@ -5,6 +5,8 @@ import lombok.Data;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.util.List;
+
 
 @Data
 public class Model {
@@ -31,6 +33,8 @@ public class Model {
         graph = Graph.fromJson(json);
         return this;
     }
+
+
 
 
 }
