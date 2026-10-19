@@ -27,9 +27,10 @@ public class Graph extends GraphStructure{
                     .builder()
                     .enable(DeserializationFeature.UNWRAP_ROOT_VALUE)
                     .build();
-            return mapper.readValue(json, Graph.class);
-        }
-        catch (JacksonException e) {
+            Graph graph = mapper.readValue(json, Graph.class);
+            graph.validate();
+            return graph;
+        } catch (JacksonException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
     }

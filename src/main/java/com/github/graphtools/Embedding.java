@@ -1,12 +1,17 @@
 package com.github.graphtools;
 
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Value
+import java.util.ArrayList;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
 public class Embedding {
 
-    int leftVertex;
+    int leftVertex = 0;
     String neighborLabel = "";
-    String connectTo = "";
+    List<Integer> connectTo = new ArrayList<>();
 
 }

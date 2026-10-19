@@ -1,15 +1,16 @@
 package com.github.graphtools;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Random;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class Vertex {
 
-    private int index = new Random().nextInt();
+    private int index;
     private String label = "";
 
 }

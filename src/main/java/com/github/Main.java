@@ -2,14 +2,12 @@ package com.github;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
-import com.github.graphtools.FileContentReader;
-import com.github.graphtools.Graph;
-import com.github.graphtools.GraphStructure;
-import com.github.graphtools.Model;
+import com.github.graphtools.*;
 
 public class Main {
-    static void main() {
+    public static void main(String[] args) {
         String graphFile = "/examples/graph01.json";
         String grammarFile = "/examples/grammar01.json";
         String jsonGraph, jsonGrammar, subgraph;
@@ -25,14 +23,8 @@ public class Main {
             throw new RuntimeException(e.getMessage());
         }
 
-//        Model model = new Model();
-//        model.loadGraph(jsonGraph).loadGrammar(jsonGrammar);
-//        System.out.println(model.toString());
-        Graph graph = Graph.fromJson(jsonGraph);
-        GraphStructure graphStructure = GraphStructure.fromJson(subgraph);
-        System.out.println(graph.containsSubGraph(graphStructure));
-        System.out.printf(graph.findSubGraphMapping(graphStructure).toString());
-        // subGraph -> graph
-
+        Grammar grammar = Grammar.fromJson(jsonGrammar);
+        GraphStructure graph = grammar.executeProductions(List.of("P1", "P1", "P3", "P2", "P2"));
+        GraphVisualizer.show(graph, "Graf wynikowy");
     }
 }

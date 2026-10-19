@@ -14,8 +14,56 @@
         { "index": 0, "label": "S" }
       ],
       "edges": []
-    }
+    },
 
-
+    "productions": [
+      {
+        "name": "P1",
+        "description": "S → A – S (wydłużenie ścieżki)",
+        "left": {
+          "vertices": [ { "index": 0, "label": "S" } ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            { "index": 0, "label": "A" },
+            { "index": 1, "label": "S" }
+          ],
+          "edges": [ { "u": 0, "v": 1 } ]
+        },
+        "mapping": [],
+        "embedding": [
+          { "leftVertex": 0, "neighborLabel": "*", "connectTo": [0] }
+        ]
+      },
+      {
+        "name": "P2",
+        "description": "A → a",
+        "left": {
+          "vertices": [ { "index": 0, "label": "A" } ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [ { "index": 0, "label": "a" } ],
+          "edges": []
+        },
+        "mapping": [ { "left": 0, "right": 0 } ],
+        "embedding": []
+      },
+      {
+        "name": "P3",
+        "description": "S → b (zakończenie)",
+        "left": {
+          "vertices": [ { "index": 0, "label": "S" } ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [ { "index": 0, "label": "b" } ],
+          "edges": []
+        },
+        "mapping": [ { "left": 0, "right": 0 } ],
+        "embedding": []
+      }
+    ]
   }
 }

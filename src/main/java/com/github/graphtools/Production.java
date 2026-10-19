@@ -1,17 +1,23 @@
 package com.github.graphtools;
 
-import lombok.Value;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
-@Value
+@Data
+@NoArgsConstructor
 public class Production {
 
     String name = "";
     String description = "";
     GraphStructure left;
     GraphStructure right;
-    List<Mapping> mappings;
-    List<Embedding> embeddings;
+    @JsonAlias("mapping")
+    List<Mapping> mappings = new ArrayList<>();
+    @JsonAlias("embedding")
+    List<Embedding> embeddings = new ArrayList<>();
 
 }

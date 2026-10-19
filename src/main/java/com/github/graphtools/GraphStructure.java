@@ -3,6 +3,7 @@ package com.github.graphtools;
 import com.fasterxml.jackson.annotation.JsonRootName;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jgrapht.Graph;
 import org.jgrapht.GraphMapping;
 import org.jgrapht.alg.isomorphism.VF2SubgraphIsomorphismInspector;
@@ -16,7 +17,6 @@ import tools.jackson.databind.json.JsonMapper;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,7 +25,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+/**
+ * A graph represented by indexed vertices, labeled edges, and a directedness flag.
+ * Vertex indices are used as stable identifiers by edges and production mappings.
+ */
+@Slf4j
 @Data
 @NoArgsConstructor
 @JsonRootName("graphStructure")
@@ -35,29 +41,165 @@ public class GraphStructure {
     private List<Edge> edges;
     private boolean directed;
 
+    /** Creates a deep copy of the graph's vertices and edges. */
     public GraphStructure(GraphStructure graphStructure) {
-        this.vertices = new ArrayList<>(graphStructure.getVertices());
-        this.edges = new ArrayList<>(graphStructure.getEdges());
+        this.vertices = graphStructure.getVertices().stream()
+                .map(vertex -> new Vertex(vertex.getIndex(), vertex.getLabel()))
+                .collect(Collectors.toCollection(ArrayList::new));
+        this.edges = graphStructure.getEdges().stream()
+                .map(edge -> new Edge(edge.getU(), edge.getV(), edge.getWeight(), edge.getLabel()))
+                .collect(Collectors.toCollection(ArrayList::new));
         this.directed = graphStructure.isDirected();
     }
 
+    /** Parses a graph structure from JSON containing a {@code graphStructure} root. */
     public static GraphStructure fromJson(String json) {
         try {
             final JsonMapper mapper = JsonMapper
                     .builder()
                     .enable(DeserializationFeature.UNWRAP_ROOT_VALUE)
                     .build();
-            return mapper.readValue(json, GraphStructure.class);
-        }
-        catch (JacksonException e) {
+            GraphStructure graph = mapper.readValue(json, GraphStructure.class);
+            graph.validate();
+            return graph;
+        } catch (JacksonException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
     }
 
-    //TODO if the proper index exists
+    /**
+     * Checks that this graph has initialized collections, unique vertex indices,
+     * and no edges pointing to missing vertices.
+     *
+     * @throws IllegalArgumentException if the graph is malformed
+     */
+    public void validate() {
+        if (vertices == null || edges == null) {
+            throw new IllegalArgumentException("Graph vertices and edges must be provided");
+        }
 
+        Set<Integer> vertexIndices = new java.util.HashSet<>();
+        for (Vertex vertex : vertices) {
+            if (vertex == null) {
+                throw new IllegalArgumentException("Graph must not contain null vertices");
+            }
+            if (!vertexIndices.add(vertex.getIndex())) {
+                throw new IllegalArgumentException(
+                        "Duplicate vertex index: " + vertex.getIndex());
+            }
+        }
 
-    public String getLabelOfIndex(int index) {
+        for (Edge edge : edges) {
+            if (edge == null) {
+                throw new IllegalArgumentException("Graph must not contain null edges");
+            }
+            if (!vertexIndices.contains(edge.getU()) || !vertexIndices.contains(edge.getV())) {
+                throw new IllegalArgumentException(
+                        "Edge endpoints must reference existing vertices: "
+                                + edge.getU() + " -> " + edge.getV());
+            }
+        }
+    }
+
+    /** Changes the label of the vertex with the given index. */
+    public GraphStructure changeLabel(int index, String label) {
+        Vertex vertex = vertices.stream()
+                .filter(v -> v.getIndex() == index)
+                .findFirst()
+                .orElse(null);
+
+        if (vertex == null) {
+            log.error("changeLabel:: Vertex with index:: {} does not exist", index);
+            return this;
+        }
+
+        vertex.setLabel(label);
+        return this;
+    }
+
+    /** Adds a vertex to this graph and returns this graph. */
+    public GraphStructure addVertex(Vertex vertex) {
+        vertices.add(vertex);
+        return this;
+    }
+
+    /**
+     * Removes the vertex with the given index and all edges incident to it.
+     *
+     * @param vertex vertex identifying the index to remove
+     * @return this graph
+     */
+    public GraphStructure removeVertex(Vertex vertex) {
+        Objects.requireNonNull(vertex, "vertex must not be null");
+        int index = vertex.getIndex();
+        vertices.removeIf(existing -> existing.getIndex() == index);
+        edges.removeIf(edge -> edge.getU() == index || edge.getV() == index);
+        return this;
+    }
+
+    /**
+     * Adds an edge if both endpoint indices exist in this graph.
+     * Invalid endpoint indices are logged and leave the graph unchanged.
+     */
+    public GraphStructure addEdge(Edge edge) {
+        if (!containsIndices(List.of(edge.getU()))) {
+            log.error("addEdge::U:: Vertex with index:: {} does not exist", edge.getU());
+            return this;
+        }
+
+        if (!containsIndices(List.of(edge.getV()))) {
+            log.error("addEdge::V:: Vertex with index:: {} does not exist", edge.getV());
+            return this;
+        }
+
+        edges.add(edge);
+        return this;
+    }
+
+    /** Removes the first edge equal to the supplied edge. */
+    public GraphStructure removeEdge(Edge edge) {
+        edges.remove(edge);
+        return this;
+    }
+
+    /** Returns whether every supplied index identifies a vertex in this graph. */
+    public boolean containsIndices(List<Integer> indices) {
+        return indices.stream()
+                .allMatch(i -> vertices.stream()
+                        .anyMatch(v -> v.getIndex() == i)
+                );
+    }
+
+    /** Returns whether this graph contains vertices with all the supplied labels. */
+    public boolean containsVertices(List<Vertex> givenVertices) {
+        return givenVertices.stream()
+                .allMatch(given -> vertices.stream()
+                        .anyMatch(existing -> Objects.equals(existing.getLabel(), given.getLabel())));
+    }
+
+    /**
+     * Returns whether each supplied edge is represented by an edge between vertices
+     * with matching labels. This check treats endpoint order as interchangeable.
+     */
+    public boolean containsEdges(List<Edge> givenEdges, List<Vertex> givenVertices) {
+        return givenEdges.stream()
+                .allMatch(edge -> {
+                    String sourceLabel = getLabelOfIndex(edge.getU(), givenVertices);
+                    String targetLabel = getLabelOfIndex(edge.getV(), givenVertices);
+
+                    return edges.stream()
+                            .anyMatch(existing -> {
+                                String existingSourceLabel = getLabelOfIndex(existing.getU());
+                                String existingTargetLabel = getLabelOfIndex(existing.getV());
+                                return (Objects.equals(sourceLabel, existingSourceLabel)
+                                        && Objects.equals(targetLabel, existingTargetLabel))
+                                        || (Objects.equals(sourceLabel, existingTargetLabel)
+                                        && Objects.equals(targetLabel, existingSourceLabel));
+                            });
+                });
+    }
+
+    private String getLabelOfIndex(int index) {
         return vertices.stream()
                 .filter(v -> v.getIndex() == index)
                 .map(Vertex::getLabel)
@@ -65,7 +207,7 @@ public class GraphStructure {
                 .orElse(null);
     }
 
-    public static String getLabelOfIndex(int index, List<Vertex> givenVertices) {
+    private static String getLabelOfIndex(int index, List<Vertex> givenVertices) {
         return givenVertices.stream()
                 .filter(v -> v.getIndex() == index)
                 .map(Vertex::getLabel)
@@ -73,53 +215,35 @@ public class GraphStructure {
                 .orElse(null);
     }
 
-
-    public boolean containsVertices(List<Vertex> givenVertices) {
-        return givenVertices.stream()
-                .allMatch(v1 -> vertices
-                        .stream()
-                        .anyMatch(v2 -> v2.getLabel().equals(v1.getLabel()))
-                );
+    private List<Integer> getIndices() {
+        return vertices.stream()
+                .map(Vertex::getIndex)
+                .toList();
     }
 
-    public List<Vertex> fixIndices() {
-        Set<Integer> usedIndices = new HashSet<>();
-        Random random = new Random();
+    /** Returns {@code n} randomly generated indices not currently used by vertices. */
+    public List<Integer> getAvailableIndices(int n) {
+        List<Integer> indices = getIndices();
+        List<Integer> candidates = new ArrayList<>();
 
-        for (Vertex vertex : vertices) {
-            if (!usedIndices.add(vertex.getIndex())) {
-                int newIndex;
-                do {
-                    newIndex = random.nextInt();
-                } while (usedIndices.contains(newIndex));
+        for (int i = 0; i < n; i++) {
+            int candidate;
+            do {
+                candidate = new Random().nextInt();
+            } while (indices.contains(candidate) || candidates.contains(candidate));
 
-                vertex.setIndex(newIndex);
-                usedIndices.add(newIndex);
-            }
+            candidates.add(candidate);
         }
 
-        return vertices;
-    }
-
-
-    public boolean containsEdges(List<Edge> givenEdges, List<Vertex> givenVertices) {
-        return givenEdges.stream()
-                .allMatch(e -> {
-                    String l1 = GraphStructure.getLabelOfIndex(e.getU(), givenVertices);
-                    String l2 = GraphStructure.getLabelOfIndex(e.getV(), givenVertices);
-
-                    return edges.stream()
-                            .anyMatch(edge -> {
-                                String label1 = getLabelOfIndex(edge.getU());
-                                String label2 = getLabelOfIndex(edge.getV());
-                                return (l1.equals(label1) && l2.equals(label2)) ||
-                                        (l1.equals(label2) && l2.equals(label1));
-                            });
-                });
+        return candidates;
     }
 
     /**
-     * @return Optional<Map<Integer, Integer>>  - a mapping (index in subgraph -> index in graph)
+     * Finds a label- and structure-preserving subgraph match.
+     *
+     * @param subGraph pattern to find in this graph
+     * @return a mapping from subgraph vertex indices to this graph's indices,
+     *         or empty if no match exists
      */
     public Optional<Map<Integer, Integer>> findSubGraphMapping(GraphStructure subGraph) {
         Objects.requireNonNull(subGraph, "subGraph must not be null");
@@ -153,6 +277,11 @@ public class GraphStructure {
             mapping.put(patternVertex.index(), hostVertex.index());
         }
         return Optional.of(Map.copyOf(mapping));
+    }
+
+    /** Returns whether the supplied graph has a matching subgraph in this graph. */
+    public boolean containsSubGraph(GraphStructure graphStructure) {
+        return findSubGraphMapping(graphStructure).isPresent();
     }
 
     private Graph<IndexedVertex, DefaultEdge> toJGraphTGraph() {
@@ -192,10 +321,6 @@ public class GraphStructure {
             }
         }
         return graph;
-    }
-
-    public boolean containsSubGraph(GraphStructure graphStructure) {
-        return findSubGraphMapping(graphStructure).isPresent();
     }
 
     private record IndexedVertex(int type, int position, int index, String label) {}
