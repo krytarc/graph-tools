@@ -39,12 +39,17 @@ public class GraphStructure {
 
     private List<Vertex> vertices;
     private List<Edge> edges;
-    private boolean directed;
+    private Boolean directed;
+
+    public boolean isDirected() {
+        return Boolean.TRUE.equals(directed);
+    }
 
     /** Creates a deep copy of the graph's vertices and edges. */
     public GraphStructure(GraphStructure graphStructure) {
         this.vertices = graphStructure.getVertices().stream()
-                .map(vertex -> new Vertex(vertex.getIndex(), vertex.getLabel()))
+                .map(vertex -> new Vertex(vertex.getIndex(), vertex.getLabel(),
+                        vertex.getX(), vertex.getY()))
                 .collect(Collectors.toCollection(ArrayList::new));
         this.edges = graphStructure.getEdges().stream()
                 .map(edge -> new Edge(edge.getU(), edge.getV(), edge.getWeight(), edge.getLabel()))
@@ -247,7 +252,7 @@ public class GraphStructure {
      */
     public Optional<Map<Integer, Integer>> findSubGraphMapping(GraphStructure subGraph) {
         Objects.requireNonNull(subGraph, "subGraph must not be null");
-        if (directed != subGraph.isDirected()) {
+        if (isDirected() != subGraph.isDirected()) {
             return Optional.empty();
         }
 
@@ -285,7 +290,7 @@ public class GraphStructure {
     }
 
     private Graph<IndexedVertex, DefaultEdge> toJGraphTGraph() {
-        Graph<IndexedVertex, DefaultEdge> graph = directed
+        Graph<IndexedVertex, DefaultEdge> graph = isDirected()
                 ? new SimpleDirectedGraph<>(DefaultEdge.class)
                 : new SimpleGraph<>(DefaultEdge.class);
         Map<Integer, IndexedVertex> verticesByIndex = new HashMap<>();
@@ -306,7 +311,7 @@ public class GraphStructure {
             }
             IndexedVertex edgeVertex = new IndexedVertex(1, i, i, edge.getLabel());
             graph.addVertex(edgeVertex);
-            if (directed) {
+            if (isDirected()) {
                 graph.addEdge(source, edgeVertex);
                 graph.addEdge(edgeVertex, target);
             } else if (source.equals(target)) {

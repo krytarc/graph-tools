@@ -13,6 +13,7 @@ public class Production {
 
     String name = "";
     String description = "";
+    String danglingEdges;
     GraphStructure left;
     GraphStructure right;
     @JsonAlias("mapping")

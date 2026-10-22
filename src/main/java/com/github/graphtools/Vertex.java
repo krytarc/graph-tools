@@ -12,5 +12,11 @@ public class Vertex {
 
     private int index;
     private String label = "";
+    private Double x;
+    private Double y;
+
+    public Vertex(int index, String label) {
+        this(index, label, null, null);
+    }
 
 }

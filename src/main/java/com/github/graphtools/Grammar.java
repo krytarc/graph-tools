@@ -100,6 +100,9 @@ public class Grammar {
     private void validateProduction(
             Production production, Set<String> nonterminals, Set<String> terminals) {
         String productionName = production.getName();
+        if (production.getDanglingEdges() != null) {
+            shouldForbidDanglingEdges(production.getDanglingEdges());
+        }
         if (production.getLeft() == null || production.getRight() == null) {
             throw new IllegalArgumentException(
                     "Production " + productionName + " must define left and right graphs");
@@ -167,9 +170,9 @@ public class Grammar {
                         "Embedding has an unknown neighborLabel in production " + productionName);
             }
             List<Integer> connectTo = embedding.getConnectTo();
-            if (connectTo == null || connectTo.isEmpty()) {
+            if (connectTo == null) {
                 throw new IllegalArgumentException(
-                        "Embedding connectTo must contain right-side vertex indices in production "
+                        "Embedding connectTo must not be null in production "
                                 + productionName);
             }
             for (Integer rightIndex : connectTo) {
@@ -187,6 +190,9 @@ public class Grammar {
             GraphStructure graph, String graphName,
             Set<String> nonterminals, Set<String> terminals) {
         graph.validate();
+        if (graph.getDirected() == null) {
+            graph.setDirected(directed);
+        }
         if (graph.isDirected() != directed) {
             throw new IllegalArgumentException(
                     graphName + " directedness does not match the grammar");
@@ -240,7 +246,11 @@ public class Grammar {
                 throw new IllegalArgumentException(
                         "Production does not exist: " + productionName);
             }
-            applyProduction(product, production, forbidDanglingEdges);
+            boolean productionForbidsDanglingEdges =
+                    production.getDanglingEdges() == null
+                            ? forbidDanglingEdges
+                            : shouldForbidDanglingEdges(production.getDanglingEdges());
+            applyProduction(product, production, productionForbidsDanglingEdges);
         }
 
         return product;
@@ -278,7 +288,8 @@ public class Grammar {
         for (int i = 0; i < newRightVertices.size(); i++) {
             Vertex rightVertex = newRightVertices.get(i);
             int graphIndex = newGraphIndices.get(i);
-            graph.addVertex(new Vertex(graphIndex, rightVertex.getLabel()));
+            graph.addVertex(new Vertex(graphIndex, rightVertex.getLabel(),
+                    rightVertex.getX(), rightVertex.getY()));
             rightToGraph.put(rightVertex.getIndex(), graphIndex);
         }
 
@@ -448,6 +459,10 @@ public class Grammar {
 
     /** Validates the configured dangling-edge policy and returns whether it is {@code forbid}. */
     private boolean shouldForbidDanglingEdges() {
+        return shouldForbidDanglingEdges(danglingEdges);
+    }
+
+    private static boolean shouldForbidDanglingEdges(String danglingEdges) {
         if (danglingEdges == null) {
             throw new IllegalArgumentException(
                     "danglingEdges must be either 'forbid' or 'delete'");
@@ -465,9 +480,9 @@ public class Grammar {
             Map<Integer, Integer> rightToGraph,
             Embedding embedding) {
         List<Integer> rightVertexIndices = embedding.getConnectTo();
-        if (rightVertexIndices == null || rightVertexIndices.isEmpty()) {
+        if (rightVertexIndices == null) {
             throw new IllegalArgumentException(
-                    "Embedding connectTo must contain at least one right-side vertex index");
+                    "Embedding connectTo must not be null");
         }
         return rightVertexIndices.stream()
                 .map(rightVertexIndex -> {
