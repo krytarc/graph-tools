@@ -264,10 +264,19 @@ public class Grammar {
             return;
         }
 
+        applyProduction(graph, production, leftToGraph, forbidDanglingEdges);
+    }
+
+    void applyProduction(
+            GraphStructure graph, Production production,
+            Map<Integer, Integer> leftToGraph, boolean forbidDanglingEdges) {
+
         Map<Integer, Integer> rightToGraph =
                 addRightVerticesAndBuildMapping(graph, production, leftToGraph);
+
         removeLeftSideAndHandleContextEdges(
                 graph, production, leftToGraph, rightToGraph, forbidDanglingEdges);
+
         updateRightSideLabels(graph, production, rightToGraph);
         addRightSideEdges(graph, production, rightToGraph);
     }
@@ -462,7 +471,7 @@ public class Grammar {
         return shouldForbidDanglingEdges(danglingEdges);
     }
 
-    private static boolean shouldForbidDanglingEdges(String danglingEdges) {
+    static boolean shouldForbidDanglingEdges(String danglingEdges) {
         if (danglingEdges == null) {
             throw new IllegalArgumentException(
                     "danglingEdges must be either 'forbid' or 'delete'");

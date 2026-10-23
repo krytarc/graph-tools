@@ -4,7 +4,6 @@ package com.github.graphtools;
 import lombok.*;
 
 import java.util.List;
-import java.util.Map;
 
 @Data
 public class TransformationSystem {
@@ -12,30 +11,63 @@ public class TransformationSystem {
     private final Grammar grammar;
 
     @Setter(AccessLevel.NONE)
-    private History history;
+    private History history = new History();
 
-    public TransformationSystem apply(List<String> productions, String selectionStrategy, String danglingEdges) {
-        String previousDanglingEdges = grammar.getDanglingEdges();
-        Graph previousStartGraph = grammar.getStartGraph();
-        grammar.setDanglingEdges(danglingEdges);
-
-        List<Map<Integer, Integer>> allLeftToGraph; //todo finish getting mappings
-
-
-
-        if (selectionStrategy.equals("single")) {
-            Map<Integer, Integer> leftToGraph = a;
-        }
-
-
-        grammar.setDanglingEdges(previousDanglingEdges);
-        grammar.setStartGraph(previousStartGraph);
-        return this;
+    public TransformationSystem apply(List<String> productions) {
+        return apply(productions, 1, null);
     }
 
-    private void initializeHistoryIfAbsent() {
-        if (history == null) {
-            history = new History();
+    public TransformationSystem apply(
+            List<String> productions, int selectionStrategy) {
+        return apply(productions, selectionStrategy, null);
+    }
+
+    public TransformationSystem apply(
+            List<String> productions, int selectionStrategy,
+            Integer danglingEdges) {
+        if (selectionStrategy != 1 && selectionStrategy != 2) {
+            throw new IllegalArgumentException(
+                    "selectionStrategy must be 1 or 2");
         }
+        String policy = danglingEdges == null ? null : switch (danglingEdges) {
+            case 1 -> "forbid";
+            case 2 -> "delete";
+            default -> throw new IllegalArgumentException(
+                    "danglingEdges must be 1 or 2");
+        };
+        return execute(productions, selectionStrategy == 1, policy);
+    }
+
+    public TransformationSystem apply(
+            List<String> productions, String selectionStrategy,
+            String danglingEdges) {
+        boolean many = selectionStrategy == null
+                || switch (selectionStrategy) {
+                    case "1", "all" -> true;
+                    case "2", "single" -> false;
+                    default -> throw new IllegalArgumentException(
+                            "selectionStrategy must be 1, 2, all or single");
+                };
+        String policy = danglingEdges == null ? null : switch (danglingEdges) {
+            case "1", "forbid" -> "forbid";
+            case "2", "delete" -> "delete";
+            default -> throw new IllegalArgumentException(
+                    "danglingEdges must be 1, 2, forbid or delete");
+        };
+        return execute(productions, many, policy);
+    }
+
+    private TransformationSystem execute(
+            List<String> productions, boolean many, String danglingEdges) {
+        GrammarExecutor executor =
+                new GrammarExecutor(graph, grammar, productions, danglingEdges);
+        for (String production : List.copyOf(productions)) {
+            GraphStructure result = executor.next(many, true);
+            graph.setVertices(result.getVertices());
+            graph.setEdges(result.getEdges());
+            graph.setDirected(result.getDirected());
+            history.append(production, graph);
+        }
+        return this;
     }
 }

@@ -8,6 +8,20 @@ import com.github.graphtools.*;
 
 public class Main {
     public static void main(String[] args) {
+        lab01();
+
+//        lab02();
+    }
+
+    private static void lab02() {
+        History history = new History();
+        history.append("example", new Graph());
+
+        System.out.println(history);
+    }
+
+
+    private static void lab01() {
         String graphFile = "/examples/graph01.json";
         String graphFile2 = "/examples/graph02.json";
         String grammarFile = "/examples/grammar01.json";
