@@ -47,13 +47,20 @@ public class GraphStructure {
 
     /** Creates a deep copy of the graph's vertices and edges. */
     public GraphStructure(GraphStructure graphStructure) {
-        this.vertices = graphStructure.getVertices().stream()
-                .map(vertex -> new Vertex(vertex.getIndex(), vertex.getLabel(),
-                        vertex.getX(), vertex.getY()))
-                .collect(Collectors.toCollection(ArrayList::new));
-        this.edges = graphStructure.getEdges().stream()
-                .map(edge -> new Edge(edge.getU(), edge.getV(), edge.getWeight(), edge.getLabel()))
-                .collect(Collectors.toCollection(ArrayList::new));
+
+        if (graphStructure.getVertices() != null) {
+            this.vertices = graphStructure.getVertices().stream()
+                    .map(vertex -> new Vertex(vertex.getIndex(), vertex.getLabel(),
+                            vertex.getX(), vertex.getY()))
+                    .collect(Collectors.toCollection(ArrayList::new));
+        }
+
+        if (graphStructure.getEdges() != null) {
+            this.edges = graphStructure.getEdges().stream()
+                    .map(edge -> new Edge(edge.getU(), edge.getV(), edge.getWeight(), edge.getLabel()))
+                    .collect(Collectors.toCollection(ArrayList::new));
+        }
+
         this.directed = graphStructure.isDirected();
     }
 
@@ -251,9 +258,21 @@ public class GraphStructure {
      *         or empty if no match exists
      */
     public Optional<Map<Integer, Integer>> findSubGraphMapping(GraphStructure subGraph) {
+        return findSubGraphMapping(subGraph, false).stream().findFirst();
+    }
+
+    /**
+     * Finds one or all distinct subgraph mappings.
+     *
+     * @param subGraph pattern to find in this graph
+     * @param many whether to find all mappings
+     * @return mappings from subgraph vertex indices to this graph's indices
+     */
+    public List<Map<Integer, Integer>> findSubGraphMapping(
+            GraphStructure subGraph, boolean many) {
         Objects.requireNonNull(subGraph, "subGraph must not be null");
         if (isDirected() != subGraph.isDirected()) {
-            return Optional.empty();
+            return List.of();
         }
 
         Graph<IndexedVertex, DefaultEdge> hostGraph = toJGraphTGraph();
@@ -265,23 +284,27 @@ public class GraphStructure {
         VF2SubgraphIsomorphismInspector<IndexedVertex, DefaultEdge> inspector =
                 new VF2SubgraphIsomorphismInspector<>(hostGraph, patternGraph, vertexComparator, null);
         Iterator<GraphMapping<IndexedVertex, DefaultEdge>> mappings = inspector.getMappings();
-        if (!mappings.hasNext()) {
-            return Optional.empty();
-        }
-
-        GraphMapping<IndexedVertex, DefaultEdge> graphMapping = mappings.next();
-        Map<Integer, Integer> mapping = new LinkedHashMap<>();
-        for (IndexedVertex patternVertex : patternGraph.vertexSet()) {
-            if (patternVertex.type() != 0) {
-                continue;
+        Set<Map<Integer, Integer>> results = new java.util.LinkedHashSet<>();
+        while (mappings.hasNext()) {
+            GraphMapping<IndexedVertex, DefaultEdge> graphMapping = mappings.next();
+            Map<Integer, Integer> mapping = new LinkedHashMap<>();
+            for (IndexedVertex patternVertex : patternGraph.vertexSet()) {
+                if (patternVertex.type() != 0) {
+                    continue;
+                }
+                IndexedVertex hostVertex =
+                        graphMapping.getVertexCorrespondence(patternVertex, false);
+                if (hostVertex == null) {
+                    return List.of();
+                }
+                mapping.put(patternVertex.index(), hostVertex.index());
             }
-            IndexedVertex hostVertex = graphMapping.getVertexCorrespondence(patternVertex, false);
-            if (hostVertex == null) {
-                return Optional.empty();
+            results.add(Map.copyOf(mapping));
+            if (!many) {
+                break;
             }
-            mapping.put(patternVertex.index(), hostVertex.index());
         }
-        return Optional.of(Map.copyOf(mapping));
+        return List.copyOf(results);
     }
 
     /** Returns whether the supplied graph has a matching subgraph in this graph. */
