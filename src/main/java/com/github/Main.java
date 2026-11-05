@@ -8,16 +8,34 @@ import com.github.graphtools.*;
 
 public class Main {
     public static void main(String[] args) {
-        lab01();
+//        lab01();
 
-//        lab02();
+        lab02();
     }
 
     private static void lab02() {
-        History history = new History();
-        history.append("example", new Graph());
+        try {
+            Graph graph = Graph.fromJson(
+                    FileContentReader.read("/examples/graph2-01.json"));
+            Grammar grammar = Grammar.fromJson(
+                    FileContentReader.read("/examples/grammar2-01.json"));
 
-        System.out.println(history);
+            TransformationSystem system =
+                    new TransformationSystem(graph, grammar);
+            GraphVisualizer.show(new Graph(graph), "Input graph");
+            system.apply(List.of("P1", "P4", "P6", "P7"), 1, 1);
+
+            int step = 1;
+            for (HistoryElement element : system.getHistory().getHistory()) {
+                GraphVisualizer.show(element.getGraph(),
+                        "Step " + step++ + ": " + element.getProductionName());
+            }
+
+            System.out.println(system.getGraph());
+            System.out.println(system.getHistory());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to execute lab02", e);
+        }
     }
 
 

@@ -1,0 +1,145 @@
+{
+  "grammar": {
+    "name": "Gramatyka siatek trĂłjkÄtnych",
+    "directed": false,
+    "danglingEdges": "forbid",
+
+    "labels": {
+      "nonterminals": ["X", "Y", "Z"],
+      "terminals": ["a", "b", "c"]
+    },
+
+    "startGraph": {
+      "vertices": [
+        { "index": 0, "label": "X" },
+        { "index": 1, "label": "Y" },
+        { "index": 2, "label": "Z" }
+      ],
+      "edges": [
+        { "u": 0, "v": 1 },
+        { "u": 1, "v": 2 },
+        { "u": 0, "v": 2 }
+      ]
+    },
+
+    "productions": [
+      {
+        "name": "P1",
+        "description": "X â trĂłjkÄt XâYâZ (doklejenie nowego trĂłjkÄta w wÄĹşle X)",
+        "left": {
+          "vertices": [ { "index": 0, "label": "X" } ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            { "index": 0, "label": "X" },
+            { "index": 1, "label": "Y" },
+            { "index": 2, "label": "Z" }
+          ],
+          "edges": [
+            { "u": 0, "v": 1 },
+            { "u": 1, "v": 2 },
+            { "u": 0, "v": 2 }
+          ]
+        },
+        "mapping": [ { "left": 0, "right": 0 } ],
+        "embedding": []
+      },
+      {
+        "name": "P2",
+        "description": "Y â b â X (nowy wÄzeĹ X tworzy trĂłjkÄty z sÄsiadami Z)",
+        "left": {
+          "vertices": [ { "index": 0, "label": "Y" } ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            { "index": 0, "label": "b" },
+            { "index": 1, "label": "X" }
+          ],
+          "edges": [ { "u": 0, "v": 1 } ]
+        },
+        "mapping": [ { "left": 0, "right": 0 } ],
+        "embedding": []
+      },
+      {
+        "name": "P3",
+        "description": "Z â c â Y (nowy wÄzeĹ Y tworzy trĂłjkÄty z sÄsiadami X)",
+        "left": {
+          "vertices": [ { "index": 0, "label": "Z" } ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            { "index": 0, "label": "c" },
+            { "index": 1, "label": "Y" }
+          ],
+          "edges": [ { "u": 0, "v": 1 } ]
+        },
+        "mapping": [ { "left": 0, "right": 0 } ],
+        "embedding": []
+      },
+      {
+        "name": "P4",
+        "description": "X â a â b (podziaĹ wÄzĹa: obaj nastÄpcy dziedziczÄ wszystkich sÄsiadĂłw)",
+        "left": {
+          "vertices": [ { "index": 0, "label": "X" } ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            { "index": 0, "label": "a" },
+            { "index": 1, "label": "b" }
+          ],
+          "edges": [ { "u": 0, "v": 1 } ]
+        },
+        "mapping": [],
+        "embedding": [
+          { "leftVertex": 0, "neighborLabel": "*", "connectTo": [0, 1] }
+        ]
+      },
+      {
+        "name": "P5",
+        "description": "X â a (zakoĹczenie)",
+        "left": {
+          "vertices": [ { "index": 0, "label": "X" } ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [ { "index": 0, "label": "a" } ],
+          "edges": []
+        },
+        "mapping": [ { "left": 0, "right": 0 } ],
+        "embedding": []
+      },
+      {
+        "name": "P6",
+        "description": "Y â b (zakoĹczenie)",
+        "left": {
+          "vertices": [ { "index": 0, "label": "Y" } ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [ { "index": 0, "label": "b" } ],
+          "edges": []
+        },
+        "mapping": [ { "left": 0, "right": 0 } ],
+        "embedding": []
+      },
+      {
+        "name": "P7",
+        "description": "Z â c (zakoĹczenie)",
+        "left": {
+          "vertices": [ { "index": 0, "label": "Z" } ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [ { "index": 0, "label": "c" } ],
+          "edges": []
+        },
+        "mapping": [ { "left": 0, "right": 0 } ],
+        "embedding": []
+      }
+    ]
+  }
+}
