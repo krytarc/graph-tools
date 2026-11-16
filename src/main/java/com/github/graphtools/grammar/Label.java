@@ -1,4 +1,4 @@
-package com.github.graphtools;
+package com.github.graphtools.grammar;
 
 import lombok.Data;
 

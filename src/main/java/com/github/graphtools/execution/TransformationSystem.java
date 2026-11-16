@@ -1,5 +1,9 @@
-package com.github.graphtools;
+package com.github.graphtools.execution;
+import com.github.graphtools.grammar.Grammar;
+import com.github.graphtools.history.History;
 
+import com.github.graphtools.model.Graph;
+import com.github.graphtools.model.GraphStructure;
 
 import lombok.*;
 
@@ -41,6 +45,20 @@ public class TransformationSystem {
     public TransformationSystem apply(
             List<String> productions, String selectionStrategy,
             String danglingEdges) {
+        return apply(productions, selectionStrategy, danglingEdges,
+                ExecutionMode.EMBEDDING_PRIORITY);
+    }
+
+    private TransformationSystem execute(
+            List<String> productions, boolean many, String danglingEdges) {
+        return execute(productions, many, danglingEdges,
+                ExecutionMode.EMBEDDING_PRIORITY);
+    }
+
+    /** Applies productions using the selected mapping and embedding semantics. */
+    public TransformationSystem apply(
+            List<String> productions, String selectionStrategy,
+            String danglingEdges, ExecutionMode executionMode) {
         boolean many = selectionStrategy == null
                 || switch (selectionStrategy) {
                     case "1", "all" -> true;
@@ -54,13 +72,15 @@ public class TransformationSystem {
             default -> throw new IllegalArgumentException(
                     "danglingEdges must be 1, 2, forbid or delete");
         };
-        return execute(productions, many, policy);
+        return execute(productions, many, policy, executionMode);
     }
 
     private TransformationSystem execute(
-            List<String> productions, boolean many, String danglingEdges) {
+            List<String> productions, boolean many, String danglingEdges,
+            ExecutionMode executionMode) {
         GrammarExecutor executor =
-                new GrammarExecutor(graph, grammar, productions, danglingEdges);
+                new GrammarExecutor(
+                        graph, grammar, productions, danglingEdges, executionMode);
         for (String production : List.copyOf(productions)) {
             GraphStructure result = executor.next(many, true);
             graph.setVertices(result.getVertices());

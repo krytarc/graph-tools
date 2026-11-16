@@ -1,4 +1,4 @@
-package com.github.graphtools;
+package com.github.graphtools.model;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
 import lombok.*;

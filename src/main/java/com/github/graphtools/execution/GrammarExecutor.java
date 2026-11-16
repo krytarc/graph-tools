@@ -1,11 +1,16 @@
-package com.github.graphtools;
+package com.github.graphtools.execution;
+import com.github.graphtools.grammar.Grammar;
+import com.github.graphtools.grammar.Production;
 
+import com.github.graphtools.model.GraphStructure;
 
 import java.util.*;
 
 public class GrammarExecutor {
+    private final ProductionApplier productionApplier = new ProductionApplier();
     private GraphStructure graph;
     private final Grammar grammar;
+    private final ExecutionMode executionMode;
     private final String danglingEdges;
     private final List<String> productions;
     private int position;
@@ -27,6 +32,16 @@ public class GrammarExecutor {
     public GrammarExecutor(
             GraphStructure graph, Grammar grammar,
             List<String> productions, String danglingEdges) {
+        this(graph, grammar, productions, danglingEdges,
+                ExecutionMode.EMBEDDING_PRIORITY);
+    }
+
+    public GrammarExecutor(
+            GraphStructure graph, Grammar grammar,
+            List<String> productions, String danglingEdges,
+            ExecutionMode executionMode) {
+        this.executionMode = Objects.requireNonNull(
+                executionMode, "executionMode must not be null");
         this.grammar = Objects.requireNonNull(grammar, "grammar must not be null");
         this.graph = new GraphStructure(
                 Objects.requireNonNull(graph, "graph must not be null"));
@@ -69,7 +84,8 @@ public class GrammarExecutor {
             throw new NoSuchElementException("No more productions");
         }
 
-        Production production = findProduction(productions.get(position));
+        Production production = executionMode.prepare(
+                findProduction(productions.get(position)));
         String policy = danglingEdges != null
                 ? danglingEdges
                 : production.getDanglingEdges() != null
@@ -93,7 +109,7 @@ public class GrammarExecutor {
                     .contains(match)) {
                 continue;
             }
-            grammar.applyProduction(candidate, production, match, forbid);
+            productionApplier.applyProduction(candidate, production, match, forbid);
             usedVertices.addAll(match.values());
             if (!many) {
                 break;

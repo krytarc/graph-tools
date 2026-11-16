@@ -1,5 +1,6 @@
-package com.github.graphtools;
+package com.github.graphtools.history;
 
+import com.github.graphtools.model.Graph;
 
 import lombok.Data;
 

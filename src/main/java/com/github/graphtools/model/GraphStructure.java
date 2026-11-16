@@ -1,4 +1,4 @@
-package com.github.graphtools;
+package com.github.graphtools.model;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
 import lombok.Data;
@@ -241,7 +241,7 @@ public class GraphStructure {
         for (int i = 0; i < n; i++) {
             int candidate;
             do {
-                candidate = new Random().nextInt();
+                candidate = new Random().nextInt(Integer.MAX_VALUE) + 1;
             } while (indices.contains(candidate) || candidates.contains(candidate));
 
             candidates.add(candidate);

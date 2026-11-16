@@ -1,5 +1,6 @@
-package com.github.graphtools;
+package com.github.graphtools.grammar;
 
+import com.github.graphtools.model.GraphStructure;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Data;
 import lombok.NoArgsConstructor;

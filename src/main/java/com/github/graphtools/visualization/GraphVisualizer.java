@@ -1,8 +1,17 @@
-package com.github.graphtools;
+package com.github.graphtools.visualization;
 
+import com.github.graphtools.model.Edge;
+import com.github.graphtools.model.GraphStructure;
+import com.github.graphtools.model.Vertex;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableModel;
+import java.awt.BorderLayout;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -11,6 +20,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,11 +47,83 @@ public final class GraphVisualizer {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame(name);
             frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            frame.add(new GraphPanel(graphStructure));
+            frame.add(new JLabel(name, SwingConstants.CENTER), BorderLayout.NORTH);
+            frame.add(new GraphPanel(graphStructure), BorderLayout.CENTER);
+            frame.add(createAdjacencyMatrix(graphStructure), BorderLayout.EAST);
             frame.pack();
             frame.setLocationByPlatform(true);
             frame.setVisible(true);
         });
+    }
+
+    private static JPanel createAdjacencyMatrix(GraphStructure graph) {
+        List<Vertex> vertices = graph.getVertices().stream()
+                .sorted(Comparator.comparingInt(Vertex::getIndex)
+                        .thenComparing(Vertex::getLabel,
+                                Comparator.nullsFirst(Comparator.naturalOrder())))
+                .toList();
+        int size = vertices.size();
+        String[] columns = new String[size + 1];
+        columns[0] = "Vertex";
+        Object[][] data = new Object[size][size + 1];
+        Map<Integer, Integer> positions = new HashMap<>();
+
+        for (int i = 0; i < size; i++) {
+            Vertex vertex = vertices.get(i);
+            String label = vertex.getLabel().isBlank()
+                    ? "(no label)" : vertex.getLabel();
+            String heading = label + " (ID: " + vertex.getIndex() + ")";
+            columns[i + 1] = heading;
+            data[i][0] = heading;
+            positions.put(vertex.getIndex(), i);
+            for (int j = 1; j <= size; j++) {
+                data[i][j] = "—";
+            }
+        }
+
+        for (Edge edge : graph.getEdges()) {
+            Integer from = positions.get(edge.getU());
+            Integer to = positions.get(edge.getV());
+            if (from == null || to == null) {
+                throw new IllegalArgumentException(
+                        "Each edge must reference an existing vertex");
+            }
+            String label = edge.getLabel() == null || edge.getLabel().isBlank()
+                    ? "(no label)" : edge.getLabel();
+            String value = "weight: " + edge.getWeight() + ", label: " + label;
+            Object previous = data[from][to + 1];
+            data[from][to + 1] = "—".equals(previous)
+                    ? value : previous + "; " + value;
+            if (!graph.isDirected()) {
+                data[to][from + 1] = data[from][to + 1];
+            }
+        }
+
+        JTable table = new JTable(new DefaultTableModel(data, columns) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        });
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        table.getTableHeader().setReorderingAllowed(false);
+        for (int i = 0; i < columns.length; i++) {
+            int width = table.getFontMetrics(table.getFont())
+                    .stringWidth(columns[i]) + 24;
+            for (int row = 0; row < size; row++) {
+                width = Math.max(width, table.getFontMetrics(table.getFont())
+                        .stringWidth(String.valueOf(data[row][i])) + 24);
+            }
+            table.getColumnModel().getColumn(i)
+                    .setPreferredWidth(Math.max(90, width));
+        }
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setPreferredSize(new Dimension(450, 500));
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(new JLabel("Adjacency matrix", SwingConstants.CENTER),
+                BorderLayout.NORTH);
+        panel.add(scroll, BorderLayout.CENTER);
+        return panel;
     }
 
     private static final class GraphPanel extends JPanel {
@@ -81,8 +163,10 @@ public final class GraphVisualizer {
                 g.drawOval((int) point.x - NODE_RADIUS, (int) point.y - NODE_RADIUS,
                         NODE_RADIUS * 2, NODE_RADIUS * 2);
                 drawCentered(g, vertex.getLabel().isBlank()
-                        ? Integer.toString(vertex.getIndex()) : vertex.getLabel(),
+                        ? "(no label)" : vertex.getLabel(),
                         (int) point.x, (int) point.y);
+                drawCentered(g, "ID: " + vertex.getIndex(),
+                        (int) point.x, (int) point.y + NODE_RADIUS + 14);
             }
             g.dispose();
         }

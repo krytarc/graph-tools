@@ -1,4 +1,4 @@
-package com.github.graphtools;
+package com.github.graphtools.io;
 
 import com.github.Main;
 
