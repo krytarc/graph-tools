@@ -1,5 +1,7 @@
 package com.github.graphtools;
 
+import com.github.graphtools.grammar.Grammar;
+import com.github.graphtools.model.Graph;
 
 import lombok.Data;
 import tools.jackson.core.JacksonException;

@@ -1,4 +1,4 @@
-package com.github.graphtools;
+package com.github.graphtools.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
