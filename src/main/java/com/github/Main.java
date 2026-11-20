@@ -22,14 +22,14 @@ public class Main {
     private static void lab02() {
         try {
             Graph graph = Graph.fromJson(
-                    FileContentReader.read("/examples/graph2-01.json"));
+                    FileContentReader.read("/examples/graph_test.json"));
             Grammar grammar = Grammar.fromJson(
-                    FileContentReader.read("/examples/grammar2-01.json"));
+                    FileContentReader.read("/examples/gram_test.json"));
 
             TransformationSystem system =
                     new TransformationSystem(graph, grammar);
             Graph inputGraph = new Graph(graph);
-            system.apply(List.of("P1", "P4", "P6", "P7"), 1, 1);
+            system.apply(List.of("P1", "P4", "P6", "P7"), 1, 2);
 
             Path report = Path.of("target", "graph-history.html");
             HtmlHistoryRenderer.write(

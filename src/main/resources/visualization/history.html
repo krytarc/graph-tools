@@ -53,15 +53,21 @@
             display: grid; place-items: center; width: 38px; height: 38px;
             flex-shrink: 0; background: #203d41; color: var(--accent); border-radius: 10px;
         }
-        .graph-view { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+        .graph-view { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
         .graph-pane, .matrix-pane { min-width: 0; }
         .graph-frame {
             background: #0e1823; border: 1px solid var(--border);
             border-radius: 12px; position: relative; overflow: hidden;
         }
-        .graph-frame svg { display: block; width: 100%; height: 560px; }
+        .graph-frame svg { display: block; width: 100%; height: 1000px; }
+        .graph-frame svg { cursor: grab; touch-action: none; }
+        .graph-frame svg.dragging { cursor: grabbing; }
         .toolbar { display: flex; gap: 4px; padding: 8px; position: absolute; right: 0; top: 0; }
         .toolbar button { padding: 3px 10px; font-size: 13px; }
+        .toolbar button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+        .grid-line { stroke: #243647; stroke-width: 1; }
+        .grid-axis { stroke: #607991; stroke-width: 1.5; }
+        .grid-tick { fill: #9aafc4; font-size: 11px; }
         .edge { fill: none; stroke: #7692ac; stroke-width: 1.7; }
         .edge-label {
             fill: #becddd; font-size: 11px; text-anchor: middle;
@@ -97,12 +103,16 @@
         .connection { white-space: nowrap; }
         .matrix-pane h3, .graph-pane h3 { margin-bottom: 8px; font-size: 14px; }
         .hint { font-size: 12px; }
-        details { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
-        summary { cursor: pointer; color: var(--accent); }
+        details { margin-top: 20px; border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
+        summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+        .matrix-details { margin-top: 0; }
+        .matrix-details[open] { padding-bottom: 16px; }
+        .matrix-details > .matrix-pane { margin-top: 14px; }
+        .applied-production[open] > summary { margin-bottom: 14px; }
         .production-sides { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; margin-top: 16px; }
         .production-sides .graph-view { grid-template-columns: minmax(0, 1fr); }
-        .production-sides svg { height: 420px; }
-        .production-sides .matrix-scroll { height: 420px; }
+        .production-sides svg { height: 720px; }
+        .production-sides .matrix-scroll { height: 560px; }
         .production-sides h4 { margin-bottom: 10px; }
         .rules { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 16px; }
         .rules ul { padding-left: 20px; color: var(--muted); }
@@ -213,62 +223,104 @@
             return pane;
         }
 
-        /** Draw loops and parallel edges separately, preserving arrow direction and edge metadata. */
+        /** Draw a graph in grid or circular coordinates and allow panning. */
         function graphDrawing(graph, vertices, title) {
             const pane = element("div", undefined, "graph-pane");
             pane.append(element("h3", "Graph"));
             const frame = element("div", undefined, "graph-frame");
-            const size = Math.max(600, vertices.length * 48);
+            const size = Math.max(800, vertices.length * 56);
             const center = size / 2;
-            const radius = vertices.length <= 1 ? 0 : size * 0.32;
-            const positions = new Map(vertices.map((vertex, index) => {
-                const angle = -Math.PI / 2 + 2 * Math.PI * index / vertices.length;
-                return [vertex.index, {x: center + radius * Math.cos(angle), y: center + radius * Math.sin(angle)}];
+            const margin = size * 0.12;
+            const plotSize = size - 2 * margin;
+            const coordinateVertices = vertices.filter(v => Number.isFinite(v.x) && Number.isFinite(v.y));
+            const hasCoordinates = coordinateVertices.length > 0;
+            const minX = hasCoordinates ? Math.min(...coordinateVertices.map(v => v.x)) : 0;
+            const maxX = hasCoordinates ? Math.max(...coordinateVertices.map(v => v.x)) : 1;
+            const minY = hasCoordinates ? Math.min(...coordinateVertices.map(v => v.y)) : 0;
+            const maxY = hasCoordinates ? Math.max(...coordinateVertices.map(v => v.y)) : 1;
+            const rangeX = maxX - minX || 1;
+            const rangeY = maxY - minY || 1;
+            const gridPositions = new Map();
+            const missing = vertices.filter(v => !Number.isFinite(v.x) || !Number.isFinite(v.y));
+            const columns = Math.max(1, Math.ceil(Math.sqrt(missing.length)));
+            const rows = Math.max(1, Math.ceil(missing.length / columns));
+            missing.forEach((vertex, i) => gridPositions.set(vertex.index, {
+                x: margin + ((i % columns + 0.5) / columns) * plotSize,
+                y: margin + (Math.floor(i / columns) + 0.5) / rows * plotSize
             }));
+            for (const vertex of coordinateVertices) {
+                gridPositions.set(vertex.index, {
+                    x: margin + (vertex.x - minX) / rangeX * plotSize,
+                    y: size - margin - (vertex.y - minY) / rangeY * plotSize
+                });
+            }
+            const circleRadius = vertices.length > 1 ? size * 0.34 : 0;
+            const circlePositions = new Map(vertices.map((v, i) => {
+                const angle = -Math.PI / 2 + 2 * Math.PI * i / Math.max(1, vertices.length);
+                return [v.index, {x: center + circleRadius * Math.cos(angle), y: center + circleRadius * Math.sin(angle)}];
+            }));
+            let layout = "grid";
+            let positions = gridPositions;
+            let zoom = 1;
+            let panX = 0;
+            let panY = 0;
+
             const svg = svgElement("svg", {viewBox: `0 0 ${size} ${size}`, role: "img", "aria-label": title});
             svg.append(svgElement("title", {}, title));
             const markerId = `arrow-${graphNumber++}`;
-            const definitions = svgElement("defs");
-            const marker = svgElement("marker", {
-                id: markerId, viewBox: "0 0 10 10", refX: 9, refY: 5,
-                markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse"
-            });
+            const defs = svgElement("defs");
+            const marker = svgElement("marker", {id: markerId, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse"});
             marker.append(svgElement("path", {d: "M 0 0 L 10 5 L 0 10 z", fill: "#7692ac"}));
-            definitions.append(marker);
-            svg.append(definitions);
-            const groups = new Map();
+            defs.append(marker);
+            svg.append(defs);
+
+            const layer = svgElement("g", {class: "graph-layer"});
+            const grid = svgElement("g", {class: "coordinate-grid"});
+            for (let i = 0; i <= 5; i++) {
+                const x = margin + plotSize * i / 5;
+                const y = margin + plotSize * i / 5;
+                grid.append(svgElement("line", {x1: x, y1: margin, x2: x, y2: size - margin, class: i === 0 ? "grid-axis" : "grid-line"}));
+                grid.append(svgElement("line", {x1: margin, y1: y, x2: size - margin, y2: y, class: i === 5 ? "grid-axis" : "grid-line"}));
+                if (hasCoordinates) {
+                    grid.append(svgElement("text", {x, y: size - margin + 24, class: "grid-tick", "text-anchor": "middle"}, (minX + rangeX * i / 5).toPrecision(3)));
+                    grid.append(svgElement("text", {x: margin - 12, y: size - margin - plotSize * i / 5 + 4, class: "grid-tick", "text-anchor": "end"}, (minY + rangeY * i / 5).toPrecision(3)));
+                }
+            }
+            grid.append(svgElement("text", {x: size / 2, y: size - 18, class: "grid-tick", "text-anchor": "middle"}, hasCoordinates ? "x" : "Grid columns"));
+            grid.append(svgElement("text", {x: 20, y: size / 2, class: "grid-tick", "text-anchor": "middle", transform: `rotate(-90 20 ${size / 2})`}, hasCoordinates ? "y" : "Grid rows"));
+
+            const edgeGroups = new Map();
             for (const edge of graph.edges) {
                 const key = `${Math.min(edge.u, edge.v)}:${Math.max(edge.u, edge.v)}`;
-                if (!groups.has(key)) groups.set(key, []);
-                groups.get(key).push(edge);
+                if (!edgeGroups.has(key)) edgeGroups.set(key, []);
+                edgeGroups.get(key).push(edge);
             }
-            for (const edges of groups.values()) {
-                edges.forEach((edge, index) => {
-                    const from = positions.get(edge.u);
-                    const to = positions.get(edge.v);
+            function drawContents() {
+                layer.replaceChildren();
+                if (layout === "grid") layer.append(grid);
+                for (const edges of edgeGroups.values()) edges.forEach((edge, index) => {
+                    const from = positions.get(edge.u), to = positions.get(edge.v);
                     if (!from || !to) throw new Error("Edge references a missing vertex");
                     let path, labelX, labelY;
                     if (edge.u === edge.v) {
-                        const height = 75 + index * 35;
-                        path = `M ${from.x - 20} ${from.y - 19} C ${from.x - height} ${from.y - height * 1.6}, ${from.x + height} ${from.y - height * 1.6}, ${from.x + 20} ${from.y - 19}`;
-                        labelX = from.x;
-                        labelY = from.y - height * 1.2 - 10;
+                        const h = 75 + index * 35;
+                        path = `M ${from.x - 20} ${from.y - 19} C ${from.x - h} ${from.y - h * 1.6}, ${from.x + h} ${from.y - h * 1.6}, ${from.x + 20} ${from.y - 19}`;
+                        labelX = from.x; labelY = from.y - h * 1.2 - 10;
                     } else {
                         const dx = to.x - from.x, dy = to.y - from.y;
-                        const length = Math.hypot(dx, dy);
-                        const direction = edge.u < edge.v ? 1 : -1;
-                        const bend = (index - (edges.length - 1) / 2) * 65 * direction;
+                        const length = Math.hypot(dx, dy) || 1;
+                        const bend = (index - (edges.length - 1) / 2) * 65 * (edge.u < edge.v ? 1 : -1);
                         const cx = (from.x + to.x) / 2 - dy / length * bend;
                         const cy = (from.y + to.y) / 2 + dx / length * bend;
-                        const startLength = Math.hypot(cx - from.x, cy - from.y);
-                        const endLength = Math.hypot(to.x - cx, to.y - cy);
-                        const startX = from.x + (cx - from.x) / startLength * 29;
-                        const startY = from.y + (cy - from.y) / startLength * 29;
-                        const endX = to.x - (to.x - cx) / endLength * 31;
-                        const endY = to.y - (to.y - cy) / endLength * 31;
-                        path = `M ${startX} ${startY} Q ${cx} ${cy} ${endX} ${endY}`;
-                        labelX = (startX + 2 * cx + endX) / 4;
-                        labelY = (startY + 2 * cy + endY) / 4 - 9;
+                        const startLength = Math.hypot(cx - from.x, cy - from.y) || 1;
+                        const endLength = Math.hypot(to.x - cx, to.y - cy) || 1;
+                        const sx = from.x + (cx - from.x) / startLength * 29;
+                        const sy = from.y + (cy - from.y) / startLength * 29;
+                        const ex = to.x - (to.x - cx) / endLength * 31;
+                        const ey = to.y - (to.y - cy) / endLength * 31;
+                        path = `M ${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`;
+                        labelX = (sx + 2 * cx + ex) / 4;
+                        labelY = (sy + 2 * cy + ey) / 4 - 9;
                     }
                     const curve = svgElement("path", {d: path, class: "edge"});
                     if (graph.directed) curve.setAttribute("marker-end", `url(#${markerId})`);
@@ -276,29 +328,50 @@
                     const label = svgElement("text", {x: labelX, y: labelY, class: "edge-label"});
                     label.append(svgElement("tspan", {x: labelX}, edge.label || "(no label)"));
                     label.append(svgElement("tspan", {x: labelX, dy: 13}, `w: ${edge.weight ?? "—"}`));
-                    svg.append(curve, label);
+                    layer.append(curve, label);
                 });
+                for (const vertex of vertices) {
+                    const point = positions.get(vertex.index);
+                    const group = svgElement("g");
+                    group.append(svgElement("title", {}, vertexName(vertex)));
+                    group.append(svgElement("circle", {cx: point.x, cy: point.y, r: 28, class: "node"}));
+                    group.append(svgElement("text", {x: point.x, y: point.y + 4, class: "node-label"}, vertex.label || "(no label)"));
+                    group.append(svgElement("text", {x: point.x, y: point.y + 47, class: "node-id"}, `ID: ${vertex.index}`));
+                    layer.append(group);
+                }
             }
-            for (const vertex of vertices) {
-                const point = positions.get(vertex.index);
-                const group = svgElement("g");
-                group.append(svgElement("title", {}, vertexName(vertex)));
-                group.append(svgElement("circle", {cx: point.x, cy: point.y, r: 28, class: "node"}));
-                group.append(svgElement("text", {x: point.x, y: point.y + 4, class: "node-label"}, vertex.label || "(no label)"));
-                group.append(svgElement("text", {x: point.x, y: point.y + 47, class: "node-id"}, `ID: ${vertex.index}`));
-                svg.append(group);
-            }
-            if (!vertices.length) svg.append(svgElement("text", {x: center, y: center, class: "node-id"}, "Empty graph"));
-            const toolbar = element("div", undefined, "toolbar");
-            let zoom = 1;
+            drawContents();
+            if (!vertices.length) layer.append(svgElement("text", {x: center, y: center, class: "node-id"}, "Empty graph"));
+            svg.append(layer);
+
             function updateView() {
                 const extent = size / zoom;
-                svg.setAttribute("viewBox", `${center - extent / 2} ${center - extent / 2} ${extent} ${extent}`);
+                const originX = center - extent / 2 - panX / zoom;
+                const originY = center - extent / 2 - panY / zoom;
+                svg.setAttribute("viewBox", `${originX} ${originY} ${extent} ${extent}`);
+            }
+            function setLayout(next) {
+                layout = next;
+                positions = layout === "grid" ? gridPositions : circlePositions;
+                drawContents();
+                for (const button of layoutButtons) button.setAttribute("aria-pressed", String(button.dataset.layout === layout));
+            }
+
+            const toolbar = element("div", undefined, "toolbar");
+            const layoutButtons = [];
+            for (const name of ["grid", "circle"]) {
+                const button = element("button", name === "grid" ? "Grid" : "Circle");
+                button.type = "button";
+                button.dataset.layout = name;
+                button.setAttribute("aria-pressed", String(name === layout));
+                button.addEventListener("click", () => setLayout(name));
+                layoutButtons.push(button);
+                toolbar.append(button);
             }
             for (const [text, description, action] of [
                 ["+", "Zoom in", () => { zoom = Math.min(4, zoom * 1.25); }],
                 ["−", "Zoom out", () => { zoom = Math.max(0.4, zoom / 1.25); }],
-                ["Reset", "Reset graph view", () => { zoom = 1; }]
+                ["Reset", "Reset graph view", () => { zoom = 1; panX = 0; panY = 0; }]
             ]) {
                 const button = element("button", text);
                 button.type = "button";
@@ -306,6 +379,26 @@
                 button.addEventListener("click", () => { action(); updateView(); });
                 toolbar.append(button);
             }
+
+            let drag = null;
+            svg.addEventListener("pointerdown", event => {
+                if (event.target.closest(".node")) return;
+                drag = {x: event.clientX, y: event.clientY, panX, panY};
+                svg.setPointerCapture(event.pointerId);
+                svg.classList.add("dragging");
+            });
+            svg.addEventListener("pointermove", event => {
+                if (!drag) return;
+                panX = drag.panX + event.clientX - drag.x;
+                panY = drag.panY + event.clientY - drag.y;
+                updateView();
+            });
+            function endDrag() {
+                drag = null;
+                svg.classList.remove("dragging");
+            }
+            svg.addEventListener("pointerup", endDrag);
+            svg.addEventListener("pointercancel", endDrag);
             frame.append(svg, toolbar);
             pane.append(frame, element("p", `${vertices.length} vertices · ${graph.edges.length} edges · ${graph.directed ? "Directed" : "Undirected"}`, "hint"));
             return pane;
@@ -314,12 +407,15 @@
         function graphView(graph, title) {
             const vertices = sortedVertices(graph);
             const view = element("div", undefined, "graph-view");
-            view.append(graphDrawing(graph, vertices, title), adjacencyMatrix(graph, vertices));
+            const matrixDetails = element("details", undefined, "matrix-details");
+            matrixDetails.append(element("summary", "Adjacency matrix"));
+            matrixDetails.append(adjacencyMatrix(graph, vertices));
+            view.append(graphDrawing(graph, vertices, title), matrixDetails);
             return view;
         }
 
         function productionDetails(production) {
-            const details = element("details");
+            const details = element("details", undefined, "applied-production");
             details.append(element("summary", `Applied production: ${production.name}`));
             if (production.description) details.append(element("p", production.description));
             const sides = element("div", undefined, "production-sides");

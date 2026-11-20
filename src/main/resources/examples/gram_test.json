@@ -1,0 +1,716 @@
+{
+  "grammar": {
+    "name": "Gramatyka grafowa ABCDE (siatki trĂłjkÄtne z podziaĹem wÄzĹĂłw)",
+    "directed": false,
+    "danglingEdges": "forbid",
+    "labels": {
+      "nonterminals": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "terminals": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ]
+    },
+    "startGraph": {
+      "vertices": [
+        {
+          "index": 0,
+          "label": "A"
+        },
+        {
+          "index": 1,
+          "label": "B"
+        },
+        {
+          "index": 2,
+          "label": "C"
+        }
+      ],
+      "edges": [
+        {
+          "u": 0,
+          "v": 1
+        },
+        {
+          "u": 1,
+          "v": 2
+        },
+        {
+          "u": 0,
+          "v": 2
+        }
+      ]
+    },
+    "productions": [
+      {
+        "name": "P1",
+        "description": "A â trĂłjkÄt AâDâE (doklejenie nowego trĂłjkÄta w wÄĹşle A; A zachowuje swoich sÄsiadĂłw)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "A"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "A"
+            },
+            {
+              "index": 1,
+              "label": "D"
+            },
+            {
+              "index": 2,
+              "label": "E"
+            }
+          ],
+          "edges": [
+            {
+              "u": 0,
+              "v": 1
+            },
+            {
+              "u": 1,
+              "v": 2
+            },
+            {
+              "u": 0,
+              "v": 2
+            }
+          ]
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 0
+          }
+        ],
+        "embedding": []
+      },
+      {
+        "name": "P2",
+        "description": "B â b â E (B staje siÄ terminalem b; nowy wÄzeĹ E tworzy trĂłjkÄty z sÄsiadami o etykiecie A)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "B"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "b"
+            },
+            {
+              "index": 1,
+              "label": "E"
+            }
+          ],
+          "edges": [
+            {
+              "u": 0,
+              "v": 1
+            }
+          ]
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 0
+          }
+        ],
+        "embedding": [
+          {
+            "leftVertex": 0,
+            "neighborLabel": "A",
+            "connectTo": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "name": "P3",
+        "description": "C â c â D (C staje siÄ terminalem c; nowy wÄzeĹ D ĹÄczy siÄ z sÄsiadami o etykietach B oraz b)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "C"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "c"
+            },
+            {
+              "index": 1,
+              "label": "D"
+            }
+          ],
+          "edges": [
+            {
+              "u": 0,
+              "v": 1
+            }
+          ]
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 0
+          }
+        ],
+        "embedding": [
+          {
+            "leftVertex": 0,
+            "neighborLabel": "B",
+            "connectTo": [
+              1
+            ]
+          },
+          {
+            "leftVertex": 0,
+            "neighborLabel": "b",
+            "connectTo": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "name": "P4",
+        "description": "D â d â A (D staje siÄ terminalem d; nowy wÄzeĹ A ĹÄczy siÄ z sÄsiadami o etykietach E i C)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "D"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "d"
+            },
+            {
+              "index": 1,
+              "label": "A"
+            }
+          ],
+          "edges": [
+            {
+              "u": 0,
+              "v": 1
+            }
+          ]
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 0
+          }
+        ],
+        "embedding": [
+          {
+            "leftVertex": 0,
+            "neighborLabel": "E",
+            "connectTo": [
+              1
+            ]
+          },
+          {
+            "leftVertex": 0,
+            "neighborLabel": "C",
+            "connectTo": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "name": "P5",
+        "description": "E â e â B (E staje siÄ terminalem e; nowy wÄzeĹ B ĹÄczy siÄ z sÄsiadami o etykiecie D)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "E"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "e"
+            },
+            {
+              "index": 1,
+              "label": "B"
+            }
+          ],
+          "edges": [
+            {
+              "u": 0,
+              "v": 1
+            }
+          ]
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 0
+          }
+        ],
+        "embedding": [
+          {
+            "leftVertex": 0,
+            "neighborLabel": "D",
+            "connectTo": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "name": "P6",
+        "description": "A â B â C (podziaĹ wÄzĹa: obaj nastÄpcy dziedziczÄ wszystkich sÄsiadĂłw A)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "A"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "B"
+            },
+            {
+              "index": 1,
+              "label": "C"
+            }
+          ],
+          "edges": [
+            {
+              "u": 0,
+              "v": 1
+            }
+          ]
+        },
+        "mapping": [],
+        "embedding": [
+          {
+            "leftVertex": 0,
+            "neighborLabel": "*",
+            "connectTo": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "name": "P7",
+        "description": "E â trĂłjkÄt eâCâD (e dziedziczy sÄsiadĂłw E; C ĹÄczy siÄ dodatkowo z sÄsiadami A, D z sÄsiadami B)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "E"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "e"
+            },
+            {
+              "index": 1,
+              "label": "C"
+            },
+            {
+              "index": 2,
+              "label": "D"
+            }
+          ],
+          "edges": [
+            {
+              "u": 0,
+              "v": 1
+            },
+            {
+              "u": 1,
+              "v": 2
+            },
+            {
+              "u": 0,
+              "v": 2
+            }
+          ]
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 0
+          }
+        ],
+        "embedding": [
+          {
+            "leftVertex": 0,
+            "neighborLabel": "A",
+            "connectTo": [
+              1
+            ]
+          },
+          {
+            "leftVertex": 0,
+            "neighborLabel": "B",
+            "connectTo": [
+              2
+            ]
+          }
+        ]
+      },
+      {
+        "name": "P8",
+        "description": "B â kwadrat bâAâCâE (b dziedziczy sÄsiadĂłw B, przeciwlegĹy wierzchoĹek C ĹÄczy siÄ ze wszystkimi sÄsiadami B)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "B"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "b"
+            },
+            {
+              "index": 1,
+              "label": "A"
+            },
+            {
+              "index": 2,
+              "label": "C"
+            },
+            {
+              "index": 3,
+              "label": "E"
+            }
+          ],
+          "edges": [
+            {
+              "u": 0,
+              "v": 1
+            },
+            {
+              "u": 1,
+              "v": 2
+            },
+            {
+              "u": 2,
+              "v": 3
+            },
+            {
+              "u": 3,
+              "v": 0
+            }
+          ]
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 0
+          }
+        ],
+        "embedding": [
+          {
+            "leftVertex": 0,
+            "neighborLabel": "*",
+            "connectTo": [
+              2
+            ]
+          }
+        ]
+      },
+      {
+        "name": "P9",
+        "description": "C â a â c (zakoĹczenie z podziaĹem: c dziedziczy sÄsiadĂłw C, a ĹÄczy siÄ dodatkowo z sÄsiadami o etykiecie A lub a)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "C"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "a"
+            },
+            {
+              "index": 1,
+              "label": "c"
+            }
+          ],
+          "edges": [
+            {
+              "u": 0,
+              "v": 1
+            }
+          ]
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 1
+          }
+        ],
+        "embedding": [
+          {
+            "leftVertex": 0,
+            "neighborLabel": "A",
+            "connectTo": [
+              0
+            ]
+          },
+          {
+            "leftVertex": 0,
+            "neighborLabel": "a",
+            "connectTo": [
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "name": "P10",
+        "description": "D â d â e (zakoĹczenie z podziaĹem: oba terminale dziedziczÄ wszystkich sÄsiadĂłw D)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "D"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "d"
+            },
+            {
+              "index": 1,
+              "label": "e"
+            }
+          ],
+          "edges": [
+            {
+              "u": 0,
+              "v": 1
+            }
+          ]
+        },
+        "mapping": [],
+        "embedding": [
+          {
+            "leftVertex": 0,
+            "neighborLabel": "*",
+            "connectTo": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "name": "P11",
+        "description": "A â a (zakoĹczenie)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "A"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "a"
+            }
+          ],
+          "edges": []
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 0
+          }
+        ],
+        "embedding": []
+      },
+      {
+        "name": "P12",
+        "description": "B â b (zakoĹczenie)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "B"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "b"
+            }
+          ],
+          "edges": []
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 0
+          }
+        ],
+        "embedding": []
+      },
+      {
+        "name": "P13",
+        "description": "C â c (zakoĹczenie)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "C"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "c"
+            }
+          ],
+          "edges": []
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 0
+          }
+        ],
+        "embedding": []
+      },
+      {
+        "name": "P14",
+        "description": "D â d (zakoĹczenie)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "D"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "d"
+            }
+          ],
+          "edges": []
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 0
+          }
+        ],
+        "embedding": []
+      },
+      {
+        "name": "P15",
+        "description": "E â e (zakoĹczenie)",
+        "left": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "E"
+            }
+          ],
+          "edges": []
+        },
+        "right": {
+          "vertices": [
+            {
+              "index": 0,
+              "label": "e"
+            }
+          ],
+          "edges": []
+        },
+        "mapping": [
+          {
+            "left": 0,
+            "right": 0
+          }
+        ],
+        "embedding": []
+      }
+    ]
+  }
+}
